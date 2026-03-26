@@ -1,0 +1,32 @@
+import asyncio
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from core.config import settings
+from db.base import Base
+from db.models import User, RefreshToken  # noqa: F401
+
+config = context.config
+if config.config_file_name:
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+
+def do_run_migrations(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations():
+    engine = create_async_engine(settings.DATABASE_URL)
+    async with engine.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await engine.dispose()
+
+
+run_migrations_online = lambda: asyncio.run(run_async_migrations())
+run_migrations_online()
