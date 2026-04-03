@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -19,7 +20,8 @@ class CategoryResponse(BaseModel):
 class ProductCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
-    price: Decimal = Field(gt=0, decimal_places=2)
+    # ADDED max_digits here as well to match ProductUpdate
+    price: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     stock: int = Field(ge=0)
     category_id: uuid.UUID | None = None
     is_active: bool = True
@@ -27,7 +29,9 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
-    price: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    # This looks good, keeping it as is
+    price: float = Field(gt=0)
+    #price: Optional[Decimal] = Field(None, max_digits=10, decimal_places=2)
     stock: int | None = Field(default=None, ge=0)
     category_id: uuid.UUID | None = None
     is_active: bool | None = None
