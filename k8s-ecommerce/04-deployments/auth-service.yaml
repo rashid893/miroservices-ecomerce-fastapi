@@ -47,7 +47,7 @@ spec:
                   key: POSTGRES_PASSWORD
       containers:
         - name: auth-service
-          image: YOUR_REGISTRY/auth-service:latest   # ← change this
+          image: rashidbrohi/auth-service:latest   # ← change this
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

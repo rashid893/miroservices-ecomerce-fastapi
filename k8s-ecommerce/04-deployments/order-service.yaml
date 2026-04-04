@@ -46,7 +46,7 @@ spec:
                   key: POSTGRES_PASSWORD
       containers:
         - name: order-service
-          image: YOUR_REGISTRY/order-service:latest   # ← change this
+          image: rashidbrohi/order-service:latest     # ← change this
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
