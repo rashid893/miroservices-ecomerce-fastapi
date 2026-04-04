@@ -1,0 +1,114 @@
+# ==============================================================
+# Auth Service Deployment
+# Image: replace YOUR_REGISTRY with your actual registry path
+# The Dockerfile runs: alembic upgrade head && uvicorn main:app
+# ==============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: ecommerce
+  labels:
+    app: auth-service
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        version: "1.0.0"
+    spec:
+      terminationGracePeriodSeconds: 30
+      # Wait for postgres-auth to be ready before starting
+      initContainers:
+        - name: wait-for-db
+          image: postgres:15-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres-auth -p 5432 -U auth_user; do
+                echo "Waiting for postgres-auth..."; sleep 2;
+              done
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: POSTGRES_PASSWORD
+      containers:
+        - name: auth-service
+          image: YOUR_REGISTRY/auth-service:latest   # ← change this
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          # Non-secret config
+          envFrom:
+            - configMapRef:
+                name: auth-service-config
+          # Secret env vars
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: DATABASE_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: JWT_SECRET_KEY
+            - name: JWT_ALGORITHM
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: JWT_ALGORITHM
+            - name: ACCESS_TOKEN_EXPIRE_MINUTES
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: ACCESS_TOKEN_EXPIRE_MINUTES
+            - name: REFRESH_TOKEN_EXPIRE_DAYS
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: REFRESH_TOKEN_EXPIRE_DAYS
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          # Graceful shutdown
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+      # If your registry is private, add an imagePullSecret here:
+      # imagePullSecrets:
+      #   - name: registry-credentials

@@ -1,0 +1,49 @@
+# ── Auth Service ConfigMap ─────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "auth-service"
+  DEBUG: "false"
+  ALLOWED_ORIGINS: "https://yourdomain.com,https://www.yourdomain.com"
+---
+# ── Product Service ConfigMap ──────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "product-service"
+  DEBUG: "false"
+  ALLOWED_ORIGINS: "https://yourdomain.com,https://www.yourdomain.com"
+---
+# ── Order Service ConfigMap ────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "order-service"
+  DEBUG: "false"
+  ALLOWED_ORIGINS: "https://yourdomain.com,https://www.yourdomain.com"
+  # Order-service calls product-service directly (per architecture.md)
+  PRODUCT_SERVICE_URL: "http://product-service:8002"
+---
+# ── Gateway Service ConfigMap ──────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "gateway-service"
+  DEBUG: "false"
+  ALLOWED_ORIGINS: "https://yourdomain.com,https://www.yourdomain.com"
+  # Internal cluster DNS — matches K8s Service names below
+  AUTH_SERVICE_URL: "http://auth-service:8001"
+  PRODUCT_SERVICE_URL: "http://product-service:8002"
+  ORDER_SERVICE_URL: "http://order-service:8003"

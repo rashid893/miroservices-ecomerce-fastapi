@@ -1,0 +1,84 @@
+# ==============================================================
+# K8s Services — ClusterIP for internal, NodePort for gateway
+# Ports mirror architecture.md:
+#   gateway  → 8000
+#   auth     → 8001
+#   product  → 8002
+#   order    → 8003
+# ==============================================================
+
+# ── Gateway Service (entry point) ──────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+  labels:
+    app: gateway-service
+    tier: gateway
+spec:
+  selector:
+    app: gateway-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP   # Ingress sits in front — no direct NodePort needed
+---
+# ── Auth Service ───────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: ecommerce
+  labels:
+    app: auth-service
+    tier: backend
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8000   # container always listens on 8000 (uvicorn default)
+      protocol: TCP
+  type: ClusterIP
+---
+# ── Product Service ────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+    tier: backend
+spec:
+  selector:
+    app: product-service
+  ports:
+    - name: http
+      port: 8002
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+# ── Order Service ──────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+    tier: backend
+spec:
+  selector:
+    app: order-service
+  ports:
+    - name: http
+      port: 8003
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP

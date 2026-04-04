@@ -1,0 +1,141 @@
+# ==============================================================
+# MIGRATION JOBS — run alembic upgrade head per service
+# These are one-off Jobs (not part of normal Deployments)
+# Run BEFORE deploying services if you manage migrations separately.
+#
+# Usage:
+#   kubectl apply -f 10-jobs/migration-jobs.yaml
+#   kubectl wait --for=condition=complete job/auth-migrate -n ecommerce --timeout=120s
+# ==============================================================
+
+# ─── Auth Service Migration ───────────────────────────────────
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-migrate
+  namespace: ecommerce
+  labels:
+    app: auth-service
+    job-type: migration
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h auth-db -U auth_user -d auth_db; do
+                echo "Waiting for auth-db..."; sleep 2;
+              done
+      containers:
+        - name: migrate
+          image: your-registry/auth-service:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: auth-service-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: DATABASE_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-secret
+                  key: JWT_SECRET_KEY
+---
+# ─── Product Service Migration ────────────────────────────────
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: product-migrate
+  namespace: ecommerce
+  labels:
+    app: product-service
+    job-type: migration
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h product-db -U product_user -d product_db; do
+                echo "Waiting for product-db..."; sleep 2;
+              done
+      containers:
+        - name: migrate
+          image: your-registry/product-service:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: product-service-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: product-service-secret
+                  key: DATABASE_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: product-service-secret
+                  key: JWT_SECRET_KEY
+---
+# ─── Order Service Migration ──────────────────────────────────
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: order-migrate
+  namespace: ecommerce
+  labels:
+    app: order-service
+    job-type: migration
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h order-db -U order_user -d order_db; do
+                echo "Waiting for order-db..."; sleep 2;
+              done
+      containers:
+        - name: migrate
+          image: your-registry/order-service:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: order-service-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: order-service-secret
+                  key: DATABASE_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: order-service-secret
+                  key: JWT_SECRET_KEY

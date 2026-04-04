@@ -1,0 +1,108 @@
+# ==============================================================
+# GATEWAY SERVICE DEPLOYMENT
+# Image: built from gateway-service/Dockerfile (python:3.12-slim)
+# Port: 8000 | No DB | Proxies to auth/product/order services
+# Entry point: uvicorn main:app --host 0.0.0.0 --port 8000
+# ==============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+  labels:
+    app: gateway-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+        version: v1
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: ["gateway-service"]
+                topologyKey: kubernetes.io/hostname
+      # Wait for all upstream services to be ready
+      initContainers:
+        - name: wait-for-auth
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://auth-service:8000/api/v1/health; do
+                echo "Waiting for auth-service..."; sleep 3;
+              done
+        - name: wait-for-product
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://product-service:8000/api/v1/health; do
+                echo "Waiting for product-service..."; sleep 3;
+              done
+        - name: wait-for-order
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://order-service:8000/api/v1/health; do
+                echo "Waiting for order-service..."; sleep 3;
+              done
+      containers:
+        - name: gateway-service
+          image: your-registry/gateway-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: gateway-service-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
