@@ -42,7 +42,7 @@ spec:
       # Wait for all upstream services to be ready
       initContainers:
         - name: wait-for-auth
-          image: curlimages/curl:latest
+          image: rashidbrohi/gateway-service:latest
           command:
             - sh
             - -c

@@ -54,7 +54,7 @@ spec:
       containers:
         - name: auth-service
           # Replace with your actual image registry path
-          image: your-registry/auth-service:latest
+          image: rashidbrohi/auth-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

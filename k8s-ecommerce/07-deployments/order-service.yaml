@@ -60,7 +60,7 @@ spec:
               done
       containers:
         - name: order-service
-          image: your-registry/order-service:latest
+          image: rashidbrohi/order-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

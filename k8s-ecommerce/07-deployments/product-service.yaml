@@ -51,7 +51,7 @@ spec:
               done
       containers:
         - name: product-service
-          image: your-registry/product-service:latest
+          image: rashidbrohi/product-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
