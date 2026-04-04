@@ -30,7 +30,7 @@ $KUBECTL apply -f 01-secrets/secrets.yaml
 
 # ── Step 3: ConfigMaps ───────────────────────────────────────
 echo "▶ [3/9] Applying configmaps..."
-$KUBECTL apply -f 02-configmaps/configmaps.yaml
+$KUBECTL apply -f 01-secrets/configmaps.yaml
 
 # ── Step 4: Databases ────────────────────────────────────────
 echo "▶ [4/9] Deploying PostgreSQL databases..."

@@ -1,6 +1,254 @@
+# # ==============================================================
+# # DATABASES — PostgreSQL StatefulSets
+# # One isolated DB per microservice (database-per-service pattern)
+# # ==============================================================
+
+# # ─── Auth DB ──────────────────────────────────────────────────
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: auth-db
+#   namespace: ecommerce
+#   labels:
+#     app: auth-db
+#     tier: database
+# spec:
+#   serviceName: auth-db
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: auth-db
+#   template:
+#     metadata:
+#       labels:
+#         app: auth-db
+#         tier: database
+#     spec:
+#       terminationGracePeriodSeconds: 60
+#       securityContext:
+#         fsGroup: 999
+#       containers:
+#         - name: postgres
+#           image: postgres:16-alpine
+#           imagePullPolicy: IfNotPresent
+#           ports:
+#             - containerPort: 5432
+#               name: postgres
+#           envFrom:
+#             - secretRef:
+#                 name: auth-db-secret
+#           resources:
+#             requests:
+#               memory: "256Mi"
+#               cpu: "100m"
+#             limits:
+#               memory: "512Mi"
+#               cpu: "500m"
+#           volumeMounts:
+#             - name: data
+#               mountPath: /var/lib/postgresql/data
+#               subPath: postgres
+#           livenessProbe:
+#             exec:
+#               command: ["pg_isready", "-U", "auth_user", "-d", "auth_db"]
+#             initialDelaySeconds: 30
+#             periodSeconds: 10
+#             failureThreshold: 6
+#           readinessProbe:
+#             exec:
+#               command: ["pg_isready", "-U", "auth_user", "-d", "auth_db"]
+#             initialDelaySeconds: 5
+#             periodSeconds: 5
+#             failureThreshold: 3
+#   volumeClaimTemplates:
+#     - metadata:
+#         name: data
+#       spec:
+#         accessModes: ["ReadWriteOnce"]
+#         storageClassName: "standard"  # Change to your cloud storage class (e.g. gp2, premium-rwo)
+#         resources:
+#           requests:
+#             storage: 10Gi
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: auth-db
+#   namespace: ecommerce
+#   labels:
+#     app: auth-db
+# spec:
+#   clusterIP: None   # Headless — required for StatefulSet DNS
+#   selector:
+#     app: auth-db
+#   ports:
+#     - port: 5432
+#       targetPort: 5432
+# ---
+# # ─── Product DB ───────────────────────────────────────────────
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: product-db
+#   namespace: ecommerce
+#   labels:
+#     app: product-db
+#     tier: database
+# spec:
+#   serviceName: product-db
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: product-db
+#   template:
+#     metadata:
+#       labels:
+#         app: product-db
+#         tier: database
+#     spec:
+#       terminationGracePeriodSeconds: 60
+#       securityContext:
+#         fsGroup: 999
+#       containers:
+#         - name: postgres
+#           image: postgres:16-alpine
+#           imagePullPolicy: IfNotPresent
+#           ports:
+#             - containerPort: 5432
+#               name: postgres
+#           envFrom:
+#             - secretRef:
+#                 name: product-db-secret
+#           resources:
+#             requests:
+#               memory: "256Mi"
+#               cpu: "100m"
+#             limits:
+#               memory: "512Mi"
+#               cpu: "500m"
+#           volumeMounts:
+#             - name: data
+#               mountPath: /var/lib/postgresql/data
+#               subPath: postgres
+#           livenessProbe:
+#             exec:
+#               command: ["pg_isready", "-U", "product_user", "-d", "product_db"]
+#             initialDelaySeconds: 30
+#             periodSeconds: 10
+#             failureThreshold: 6
+#           readinessProbe:
+#             exec:
+#               command: ["pg_isready", "-U", "product_user", "-d", "product_db"]
+#             initialDelaySeconds: 5
+#             periodSeconds: 5
+#   volumeClaimTemplates:
+#     - metadata:
+#         name: data
+#       spec:
+#         accessModes: ["ReadWriteOnce"]
+#         storageClassName: "standard"
+#         resources:
+#           requests:
+#             storage: 20Gi
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: product-db
+#   namespace: ecommerce
+#   labels:
+#     app: product-db
+# spec:
+#   clusterIP: None
+#   selector:
+#     app: product-db
+#   ports:
+#     - port: 5432
+#       targetPort: 5432
+# ---
+# # ─── Order DB ─────────────────────────────────────────────────
+# apiVersion: apps/v1
+# kind: StatefulSet
+# metadata:
+#   name: order-db
+#   namespace: ecommerce
+#   labels:
+#     app: order-db
+#     tier: database
+# spec:
+#   serviceName: order-db
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: order-db
+#   template:
+#     metadata:
+#       labels:
+#         app: order-db
+#         tier: database
+#     spec:
+#       terminationGracePeriodSeconds: 60
+#       securityContext:
+#         fsGroup: 999
+#       containers:
+#         - name: postgres
+#           image: postgres:16-alpine
+#           imagePullPolicy: IfNotPresent
+#           ports:
+#             - containerPort: 5432
+#               name: postgres
+#           envFrom:
+#             - secretRef:
+#                 name: order-db-secret
+#           resources:
+#             requests:
+#               memory: "256Mi"
+#               cpu: "100m"
+#             limits:
+#               memory: "512Mi"
+#               cpu: "500m"
+#           volumeMounts:
+#             - name: data
+#               mountPath: /var/lib/postgresql/data
+#               subPath: postgres
+#           livenessProbe:
+#             exec:
+#               command: ["pg_isready", "-U", "order_user", "-d", "order_db"]
+#             initialDelaySeconds: 30
+#             periodSeconds: 10
+#             failureThreshold: 6
+#           readinessProbe:
+#             exec:
+#               command: ["pg_isready", "-U", "order_user", "-d", "order_db"]
+#             initialDelaySeconds: 5
+#             periodSeconds: 5
+#   volumeClaimTemplates:
+#     - metadata:
+#         name: data
+#       spec:
+#         accessModes: ["ReadWriteOnce"]
+#         storageClassName: "standard"
+#         resources:
+#           requests:
+#             storage: 15Gi
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: order-db
+#   namespace: ecommerce
+#   labels:
+#     app: order-db
+# spec:
+#   clusterIP: None
+#   selector:
+#     app: order-db
+#   ports:
+#     - port: 5432
+#       targetPort: 5432
 # ==============================================================
-# DATABASES — PostgreSQL StatefulSets
-# One isolated DB per microservice (database-per-service pattern)
+# DATABASES — PostgreSQL StatefulSets (EPHEMERAL - NO PVC)
+# Note: Data will be lost on Pod restart.
 # ==============================================================
 
 # ─── Auth DB ──────────────────────────────────────────────────
@@ -52,38 +300,24 @@ spec:
             exec:
               command: ["pg_isready", "-U", "auth_user", "-d", "auth_db"]
             initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 6
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "auth_user", "-d", "auth_db"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 3
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: "standard"  # Change to your cloud storage class (e.g. gp2, premium-rwo)
-        resources:
-          requests:
-            storage: 10Gi
+      # --- ADDED THIS SECTION ---
+      volumes:
+        - name: data
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: auth-db
   namespace: ecommerce
-  labels:
-    app: auth-db
 spec:
-  clusterIP: None   # Headless — required for StatefulSet DNS
+  clusterIP: None
   selector:
     app: auth-db
   ports:
     - port: 5432
       targetPort: 5432
+
 ---
 # ─── Product DB ───────────────────────────────────────────────
 apiVersion: apps/v1
@@ -112,20 +346,12 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5432
               name: postgres
           envFrom:
             - secretRef:
                 name: product-db-secret
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -134,30 +360,16 @@ spec:
             exec:
               command: ["pg_isready", "-U", "product_user", "-d", "product_db"]
             initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 6
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "product_user", "-d", "product_db"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: "standard"
-        resources:
-          requests:
-            storage: 20Gi
+      # --- ADDED THIS SECTION ---
+      volumes:
+        - name: data
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: product-db
   namespace: ecommerce
-  labels:
-    app: product-db
 spec:
   clusterIP: None
   selector:
@@ -165,6 +377,7 @@ spec:
   ports:
     - port: 5432
       targetPort: 5432
+
 ---
 # ─── Order DB ─────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -193,20 +406,12 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5432
               name: postgres
           envFrom:
             - secretRef:
                 name: order-db-secret
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -215,30 +420,16 @@ spec:
             exec:
               command: ["pg_isready", "-U", "order_user", "-d", "order_db"]
             initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 6
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "order_user", "-d", "order_db"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: "standard"
-        resources:
-          requests:
-            storage: 15Gi
+      # --- ADDED THIS SECTION ---
+      volumes:
+        - name: data
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: order-db
   namespace: ecommerce
-  labels:
-    app: order-db
 spec:
   clusterIP: None
   selector:
