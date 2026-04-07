@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "auth-service"
+  DEBUG: "false"
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "product-service"
+  DEBUG: "false"
+  JWT_ALGORITHM: "HS256"
+  ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "order-service"
+  DEBUG: "false"
+  JWT_ALGORITHM: "HS256"
+  ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8000"
+  PRODUCT_SERVICE_URL: "http://product-service:8000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-service-config
+  namespace: ecommerce
+data:
+  SERVICE_NAME: "gateway-service"
+  DEBUG: "false"
+  ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:8000"
+  AUTH_SERVICE_URL: "http://auth-service:8000"
+  PRODUCT_SERVICE_URL: "http://product-service:8000"
+  ORDER_SERVICE_URL: "http://order-service:8000"

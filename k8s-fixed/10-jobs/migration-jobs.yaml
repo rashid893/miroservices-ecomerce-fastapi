@@ -1,19 +1,24 @@
-# # ==============================================================
-# MIGRATION JOBS — Corrected for local deployment
+# ==============================================================
+# MIGRATION JOBS — FIXED
+#
+# ROOT CAUSE of original failure:
+#   1. DATABASE_URL in secret pointed to wrong hostname
+#      (postgres-auth instead of auth-db)
+#   2. alembic/env.py reads DATABASE_URL via pydantic settings,
+#      NOT from alembic.ini — so the secret env var is critical.
+#
+# These jobs run AFTER databases are ready, BEFORE deployments.
 # ==============================================================
 
-# ─── Auth Service Migration ───────────────────────────────────
+# ── Auth Service Migration ────────────────────────────────────
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: auth-migrate
   namespace: ecommerce
-  labels:
-    app: auth-service
-    job-type: migration
 spec:
-  ttlSecondsAfterFinished: 300
-  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 5
   template:
     spec:
       restartPolicy: OnFailure
@@ -24,15 +29,16 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h auth-db -U auth_user -d auth_db; do
+              until pg_isready -h auth-db -p 5432 -U auth_user -d auth_db; do
                 echo "Waiting for auth-db..."; sleep 2;
               done
+              echo "DB ready, running migration..."
       containers:
         - name: migrate
-          # UPDATED: Corrected image name and added pull policy
           image: rashidbrohi/auth-service:latest
           imagePullPolicy: IfNotPresent
           command: ["alembic", "upgrade", "head"]
+          # DATABASE_URL from secret — this is what alembic/env.py reads via pydantic settings
           envFrom:
             - configMapRef:
                 name: auth-service-config
@@ -48,18 +54,15 @@ spec:
                   name: auth-service-secret
                   key: JWT_SECRET_KEY
 ---
-# ─── Product Service Migration ────────────────────────────────
+# ── Product Service Migration ─────────────────────────────────
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: product-migrate
   namespace: ecommerce
-  labels:
-    app: product-service
-    job-type: migration
 spec:
-  ttlSecondsAfterFinished: 300
-  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 5
   template:
     spec:
       restartPolicy: OnFailure
@@ -70,12 +73,11 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h product-db -U product_user -d product_db; do
+              until pg_isready -h product-db -p 5432 -U product_user -d product_db; do
                 echo "Waiting for product-db..."; sleep 2;
               done
       containers:
         - name: migrate
-          # UPDATED: Corrected image name and added pull policy
           image: rashidbrohi/product-service:latest
           imagePullPolicy: IfNotPresent
           command: ["alembic", "upgrade", "head"]
@@ -94,18 +96,15 @@ spec:
                   name: product-service-secret
                   key: JWT_SECRET_KEY
 ---
-# ─── Order Service Migration ──────────────────────────────────
+# ── Order Service Migration ───────────────────────────────────
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: order-migrate
   namespace: ecommerce
-  labels:
-    app: order-service
-    job-type: migration
 spec:
-  ttlSecondsAfterFinished: 300
-  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 5
   template:
     spec:
       restartPolicy: OnFailure
@@ -116,12 +115,11 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h order-db -U order_user -d order_db; do
+              until pg_isready -h order-db -p 5432 -U order_user -d order_db; do
                 echo "Waiting for order-db..."; sleep 2;
               done
       containers:
         - name: migrate
-          # UPDATED: Corrected image name and added pull policy
           image: rashidbrohi/order-service:latest
           imagePullPolicy: IfNotPresent
           command: ["alembic", "upgrade", "head"]

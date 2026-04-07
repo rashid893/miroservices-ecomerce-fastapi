@@ -1,0 +1,205 @@
+# ==============================================================
+# POSTGRES DATABASES — Deployments (docker-desktop compatible)
+#
+# BUG FIXED: Was using StatefulSets which require storageClassName.
+# For docker-desktop, use Deployments with emptyDir (dev) or
+# hostPath. Switch back to StatefulSet for cloud production.
+# ==============================================================
+
+# ── Auth DB ───────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-db
+  namespace: ecommerce
+  labels:
+    app: auth-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: auth-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: auth-db-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "auth_user", "-d", "auth_db"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "auth_user", "-d", "auth_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-db
+  namespace: ecommerce
+spec:
+  selector:
+    app: auth-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# ── Product DB ────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-db
+  namespace: ecommerce
+  labels:
+    app: product-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: product-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: product-db-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "product_user", "-d", "product_db"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "product_user", "-d", "product_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-db
+  namespace: ecommerce
+spec:
+  selector:
+    app: product-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# ── Order DB ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-db
+  namespace: ecommerce
+  labels:
+    app: order-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: order-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: order-db-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "order_user", "-d", "order_db"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "order_user", "-d", "order_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-db
+  namespace: ecommerce
+spec:
+  selector:
+    app: order-db
+  ports:
+    - port: 5432
+      targetPort: 5432

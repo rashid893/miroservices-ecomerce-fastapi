@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: ecommerce
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: ecommerce
+spec:
+  type: ClusterIP
+  selector:
+    app: product-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: ecommerce
+spec:
+  type: ClusterIP
+  selector:
+    app: order-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+spec:
+  # NodePort so you can hit it on localhost:30000 in docker-desktop
+  type: NodePort
+  selector:
+    app: gateway-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30000
